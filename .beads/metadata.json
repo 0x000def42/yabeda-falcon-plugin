@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "server",
-  "dolt_database": "yabeda_falcon_plugin",
-  "project_id": "480751b3-d7f5-4751-9c90-5a0437898526"
-}
