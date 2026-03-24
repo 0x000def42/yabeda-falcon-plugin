@@ -2,7 +2,7 @@
 
 A [Yabeda](https://github.com/yabeda-rb/yabeda) metrics plugin for the [Falcon](https://github.com/socketry/falcon) web server.
 
-Collects per-request and server-level metrics via a Rack middleware and an async background collector.
+Collects per-request HTTP metrics via Rack middleware and server-level metrics from Falcon's [async-utilization](https://github.com/socketry/async-utilization) registry.
 
 ## Installation
 
@@ -21,35 +21,17 @@ gem "yabeda-prometheus" # or any other Yabeda adapter
 require "yabeda/falcon/plugin"
 require "yabeda/falcon/middleware"
 
-Yabeda::Falcon::Plugin.install!
+# Pass the Falcon server's utilization registry for server-level metrics.
+# If omitted, only per-request metrics (counter + histogram) are collected.
+Yabeda::Falcon::Plugin.install!(registry: server.utilization_registry)
 
 use Yabeda::Falcon::Middleware
 run MyApp
 ```
 
-### Background gauge collection (falcon.rb)
-
-For push-based adapters or periodic `active_connections` gauge updates, start the async collector from a supervised Falcon service:
-
-```ruby
-# falcon.rb
-load :rack, :self_signed_tls
-
-rack "config.ru"
-
-service "yabeda-metrics-collector" do
-  run do
-    require "yabeda/falcon/collector"
-    Async do
-      Yabeda::Falcon::Plugin.collector.start(interval: 15)
-    end
-  end
-end
-```
-
 ### Custom path normalization
 
-By default, numeric path segments are collapsed to `:id` (e.g. `/users/42` → `/users/:id`). You can override this:
+By default, numeric path segments are collapsed to `:id` (e.g. `/users/42` -> `/users/:id`). You can override this:
 
 ```ruby
 use Yabeda::Falcon::Middleware, path_labeler: ->(env) {
@@ -59,19 +41,29 @@ use Yabeda::Falcon::Middleware, path_labeler: ->(env) {
 
 ## Metrics
 
+### Server-level gauges (from Falcon's utilization registry)
+
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
-| `falcon_requests_total` | Counter | `method`, `path`, `status` | Total requests handled |
-| `falcon_request_duration` | Histogram | `method`, `path`, `status` | Request duration in seconds |
-| `falcon_active_connections` | Gauge | `worker` | Active connections per worker PID |
+| `falcon_connections_total` | Gauge | `worker` | Total connections accepted |
+| `falcon_connections_active` | Gauge | `worker` | Currently active connections |
+| `falcon_requests_total_count` | Gauge | `worker` | Total requests handled by the server |
+| `falcon_requests_active` | Gauge | `worker` | Currently in-flight requests |
+
+### Per-request metrics (from Rack middleware)
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `falcon_http_requests_total` | Counter | `method`, `path`, `status` | Total HTTP requests handled |
+| `falcon_http_request_duration` | Histogram | `method`, `path`, `status` | Request duration in seconds |
 
 ## Multi-process note
 
-Falcon runs multiple worker processes when using `falcon serve -n N`. Each worker independently tracks its own `falcon_active_connections` gauge, labeled by `worker: Process.pid`. Request counters and histograms are also per-worker.
+Falcon runs multiple worker processes when using `falcon serve -n N`. Each worker independently records its own server-level gauges, labeled by `worker: Process.pid`. Per-request counters and histograms are also per-worker.
 
 For aggregation across workers, use a push-based setup:
-- **[prometheus_exporter](https://github.com/discourse/prometheus_exporter)** — workers push to a sidecar exporter process
-- **[yabeda-statsd](https://github.com/yabeda-rb/yabeda-statsd)** — each worker pushes to StatsD; aggregation happens at the StatsD/Graphite/DataDog layer
+- **[prometheus_exporter](https://github.com/discourse/prometheus_exporter)** -- workers push to a sidecar exporter process
+- **[yabeda-statsd](https://github.com/yabeda-rb/yabeda-statsd)** -- each worker pushes to StatsD; aggregation happens at the StatsD/Graphite/DataDog layer
 
 ## License
 

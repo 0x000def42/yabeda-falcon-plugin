@@ -1,33 +1,37 @@
 require "yabeda"
 require_relative "plugin/version"
-require_relative "../falcon/collector"
+require_relative "plugin/statistics"
 
 module Yabeda
   module Falcon
     module Plugin
-      def self.collector
-        @collector ||= Collector.new
+      class << self
+        attr_accessor :registry, :fetcher, :parser
       end
 
-      def self.install!
+      def self.install!(registry: nil)
+        @registry = registry
+        @fetcher = Statistics::Fetcher.new(registry)
+        @parser = Statistics::Parser.new(worker_label: Process.pid)
+
+        Statistics.register_metrics!
+
         Yabeda.configure do
           group :falcon do
-            counter :requests_total,
+            counter :http_requests_total,
               tags: %i[method path status],
-              comment: "Total number of requests handled by Falcon"
+              comment: "Total HTTP requests handled by Falcon"
 
-            histogram :request_duration,
+            histogram :http_request_duration,
               tags: %i[method path status],
               unit: :seconds,
               buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-              comment: "Request duration in seconds"
-
-            gauge :active_connections,
-              tags: %i[worker],
-              comment: "Number of currently active connections per worker"
+              comment: "HTTP request duration in seconds"
 
             collect do
-              Yabeda::Falcon::Plugin.collector.record_gauges
+              raw = Yabeda::Falcon::Plugin.fetcher.fetch
+              parsed = Yabeda::Falcon::Plugin.parser.parse(raw)
+              Statistics.collect!(parsed)
             end
           end
         end

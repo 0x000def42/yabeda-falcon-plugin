@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.email         = [""]
 
   spec.summary       = "Yabeda metrics plugin for the Falcon web server"
-  spec.description   = "Collects per-request and server-level metrics from Falcon via Rack middleware and async background collection, and exposes them through the Yabeda metrics framework."
+  spec.description   = "Collects per-request and server-level metrics from Falcon via Rack middleware and Falcon's async-utilization registry, and exposes them through the Yabeda metrics framework."
   spec.homepage      = "https://github.com/0x000def42/yabeda-falcon-plugin"
   spec.license       = "MIT"
 
@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "yabeda", ">= 0.10"
   spec.add_dependency "rack", ">= 2.0"
+  spec.add_dependency "async-utilization", ">= 0.1"
 
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rack-test", "~> 2.0"
