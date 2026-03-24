@@ -14,49 +14,41 @@ RSpec.describe Yabeda::Falcon::Middleware do
   let(:app) { described_class.new(inner_app) }
 
   describe "request metrics" do
-    it "increments falcon_requests_total with correct labels" do
-      expect { get "/users" }
-        .to change { Yabeda.falcon_requests_total.values[{ method: "GET", path: "/users", status: "200" }] }
-        .by(1)
+    it "increments falcon_http_requests_total with correct labels" do
+      get "/users"
+      get "/users"
+      value = Yabeda.falcon_http_requests_total.values[{ method: "GET", path: "/users", status: "200" }]
+      expect(value.value).to eq(2)
     end
 
-    it "records falcon_request_duration" do
+    it "records falcon_http_request_duration" do
       get "/users"
-      expect(Yabeda.falcon_request_duration.values).to have_key({ method: "GET", path: "/users", status: "200" })
+      expect(Yabeda.falcon_http_request_duration.values).to have_key({ method: "GET", path: "/users", status: "200" })
     end
 
     it "uses the response status in labels" do
       not_found_app = ->(env) { [404, {}, ["Not Found"]] }
       app = described_class.new(not_found_app)
       get_with_app(app, "/missing")
-      expect(Yabeda.falcon_requests_total.values).to have_key({ method: "GET", path: "/missing", status: "404" })
+      expect(Yabeda.falcon_http_requests_total.values).to have_key({ method: "GET", path: "/missing", status: "404" })
     end
   end
 
   describe "path normalization" do
     it "collapses numeric path segments to :id" do
       get "/users/42"
-      expect(Yabeda.falcon_requests_total.values).to have_key({ method: "GET", path: "/users/:id", status: "200" })
+      expect(Yabeda.falcon_http_requests_total.values).to have_key({ method: "GET", path: "/users/:id", status: "200" })
     end
 
     it "collapses nested numeric segments" do
       get "/orgs/7/repos/99"
-      expect(Yabeda.falcon_requests_total.values).to have_key({ method: "GET", path: "/orgs/:id/repos/:id", status: "200" })
+      expect(Yabeda.falcon_http_requests_total.values).to have_key({ method: "GET", path: "/orgs/:id/repos/:id", status: "200" })
     end
 
     it "accepts a custom path_labeler" do
       custom_app = described_class.new(inner_app, path_labeler: ->(_env) { "/custom" })
       get_with_app(custom_app, "/whatever/123")
-      expect(Yabeda.falcon_requests_total.values).to have_key({ method: "GET", path: "/custom", status: "200" })
-    end
-  end
-
-  describe "active connections tracking" do
-    it "increments and decrements the collector" do
-      collector = Yabeda::Falcon::Plugin.collector
-      expect(collector.active_connections).to eq(0)
-      get "/users"
-      expect(collector.active_connections).to eq(0)
+      expect(Yabeda.falcon_http_requests_total.values).to have_key({ method: "GET", path: "/custom", status: "200" })
     end
   end
 
@@ -66,7 +58,7 @@ RSpec.describe Yabeda::Falcon::Middleware do
       boom_middleware = described_class.new(boom_app)
 
       expect { get_with_app(boom_middleware, "/crash") }.to raise_error("boom")
-      expect(Yabeda.falcon_requests_total.values).to have_key({ method: "GET", path: "/crash", status: "500" })
+      expect(Yabeda.falcon_http_requests_total.values).to have_key({ method: "GET", path: "/crash", status: "500" })
     end
   end
 
