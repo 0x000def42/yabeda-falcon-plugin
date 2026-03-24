@@ -1,9 +1,14 @@
 require "yabeda"
 require_relative "plugin/version"
+require_relative "../falcon/collector"
 
 module Yabeda
   module Falcon
     module Plugin
+      def self.collector
+        @collector ||= Collector.new
+      end
+
       def self.install!
         Yabeda.configure do
           group :falcon do
@@ -22,9 +27,7 @@ module Yabeda
               comment: "Number of currently active connections per worker"
 
             collect do
-              # Gauges that require active polling are updated here.
-              # falcon_active_connections is maintained directly by the middleware
-              # via Yabeda::Falcon::Collector.
+              Yabeda::Falcon::Plugin.collector.record_gauges
             end
           end
         end

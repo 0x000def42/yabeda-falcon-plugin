@@ -1,4 +1,5 @@
 require "yabeda"
+require_relative "plugin"
 
 module Yabeda
   module Falcon
@@ -13,7 +14,10 @@ module Yabeda
       end
 
       def call(env)
+        collector = Yabeda::Falcon::Plugin.collector
+        collector.increment
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
         status, headers, body = @app.call(env)
         elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
 
@@ -37,6 +41,8 @@ module Yabeda
         Yabeda.falcon_requests_total.increment(labels)
         Yabeda.falcon_request_duration.measure(labels, elapsed)
         raise
+      ensure
+        collector&.decrement
       end
     end
   end
