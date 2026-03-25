@@ -18,6 +18,11 @@ RSpec.describe Yabeda::Falcon::Plugin do
       expect(Yabeda.falcon_requests_total_count).to be_a(Yabeda::Gauge)
       expect(Yabeda.falcon_requests_active).to be_a(Yabeda::Gauge)
     end
+
+    it "registers scheduler gauges" do
+      expect(Yabeda.falcon_scheduler_load).to be_a(Yabeda::Gauge)
+      expect(Yabeda.falcon_scheduler_tasks).to be_a(Yabeda::Gauge)
+    end
   end
 
   describe ".install! with registry" do
@@ -52,6 +57,26 @@ RSpec.describe Yabeda::Falcon::Plugin do
 
     it "does not error on collect" do
       expect { Yabeda.collect! }.not_to raise_error
+    end
+  end
+
+  describe ".install! scheduler metrics" do
+    let(:mock_children) { double(size: 5) }
+    let(:mock_scheduler) { double(load: 0.42, children: mock_children) }
+
+    before do
+      allow(Fiber).to receive(:scheduler).and_return(mock_scheduler)
+      described_class.install!
+    end
+
+    it "collects scheduler_load from Fiber.scheduler" do
+      Yabeda.collect!
+      expect(Yabeda.falcon_scheduler_load.values[{ worker: Process.pid }].value).to eq(0.42)
+    end
+
+    it "collects scheduler_tasks from Fiber.scheduler.children.size" do
+      Yabeda.collect!
+      expect(Yabeda.falcon_scheduler_tasks.values[{ worker: Process.pid }].value).to eq(5)
     end
   end
 end

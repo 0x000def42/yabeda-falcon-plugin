@@ -32,6 +32,13 @@ module Yabeda
               raw = Yabeda::Falcon::Plugin.fetcher.fetch
               parsed = Yabeda::Falcon::Plugin.parser.parse(raw)
               Statistics.collect!(parsed)
+
+              worker_labels = { worker: Process.pid }
+              scheduler = Fiber.scheduler
+              if scheduler
+                Yabeda.falcon_scheduler_load.set(worker_labels, scheduler.load)
+                Yabeda.falcon_scheduler_tasks.set(worker_labels, scheduler.children&.size || 0)
+              end
             end
           end
         end

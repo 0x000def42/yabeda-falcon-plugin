@@ -20,6 +20,11 @@ module Yabeda
           requests_active: "Number of currently in-flight requests"
         }.freeze
 
+        SCHEDULER_METRICS = {
+          scheduler_load: "Async scheduler load (0.0 = idle, 1.0 = fully loaded)",
+          scheduler_tasks: "Number of top-level async tasks running in this worker"
+        }.freeze
+
         def self.register_metrics!
           Yabeda.configure do
             group :falcon do
@@ -27,6 +32,12 @@ module Yabeda
                 gauge metric_name,
                   tags: %i[worker],
                   comment: Statistics::METRIC_COMMENTS[metric_name]
+              end
+
+              Statistics::SCHEDULER_METRICS.each do |metric_name, comment|
+                gauge metric_name,
+                  tags: %i[worker],
+                  comment: comment
               end
             end
           end
