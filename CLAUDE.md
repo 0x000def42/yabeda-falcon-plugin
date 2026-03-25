@@ -4,30 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Ruby gem (`yabeda-falcon-plugin`) that provides a Yabeda metrics plugin for the Falcon web server. The project is in early development — the gem scaffold is in place but no functionality has been implemented yet.
+Ruby gem (`yabeda-falcon-plugin`) providing Yabeda metrics integration for the Falcon web server. Collects per-request HTTP metrics via Rack middleware and server-level metrics from Falcon's `async-utilization` registry.
 
 ## Commands
 
 ```bash
-# Install dependencies
-bundle install
-
-# Build the gem
-gem build yabeda-falcon-plugin.gemspec
-
-# Open an interactive console with the gem loaded
-bundle exec irb -r ./lib/yabeda/falcon/plugin
+bundle install                                    # Install dependencies
+bundle exec rspec                                 # Run all tests
+bundle exec rspec spec/yabeda/falcon/middleware_spec.rb  # Run a single spec file
+gem build yabeda-falcon-plugin.gemspec             # Build the gem
+bundle exec irb -r ./lib/yabeda/falcon/plugin      # Interactive console
 ```
 
-No test framework or Rakefile has been set up yet. When tests are added, they should be runnable via `bundle exec rspec` (RSpec is the conventional choice for Yabeda ecosystem gems).
+Default rake task is `spec`, so `bundle exec rake` also runs tests.
 
 ## Architecture
 
-The gem follows the standard Yabeda plugin structure:
+The gem has two metric collection layers:
 
-- `lib/yabeda/falcon/plugin.rb` — main entry point; defines the `Yabeda::Falcon::Plugin` module
-- `lib/yabeda/falcon/plugin/version.rb` — gem version constant (`Yabeda::Falcon::Plugin::VERSION`)
+**Per-request metrics** — `Yabeda::Falcon::Middleware` is Rack middleware that wraps each request, measuring duration and recording counter/histogram metrics. It normalizes URL paths (numeric segments → `:id`) and supports custom path labelers via constructor argument.
 
-The module namespace `Yabeda::Falcon::Plugin` mirrors the gem name. Yabeda plugins typically register metrics groups, collectors, and adapters with the Yabeda core during gem load. The integration point with Falcon would involve hooking into Falcon's middleware or server lifecycle to collect request/response metrics.
+**Server-level metrics** — `Yabeda::Falcon::Plugin::Statistics` registers gauge metrics from Falcon's utilization registry, using a Fetcher/Parser pipeline:
+- `Statistics::Fetcher` — retrieves raw stats from `Async::Utilization::Registry`
+- `Statistics::Parser` — maps registry keys to metric names, attaches worker (PID) labels
+- `Statistics` — registers gauges with Yabeda and sets values during collection
 
-The gemspec currently has placeholder author/email/homepage values that should be updated before publishing.
+**Entry point** — `Yabeda::Falcon::Plugin.install!(registry: nil)` wires everything together: registers all metrics via `Yabeda.configure` blocks and sets up the collect callback.
+
+## Key Dependencies
+
+- **yabeda** (>= 0.10) — metrics framework
+- **rack** (>= 2.0) — middleware interface
+- **async-utilization** (>= 0.1) — Falcon server stats registry
+
+## Testing
+
+RSpec with `rack-test`. The spec helper resets Yabeda state before each test. Tests mock `Async::Utilization::Registry` rather than requiring a running Falcon instance.
