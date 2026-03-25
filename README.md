@@ -15,18 +15,38 @@ gem "yabeda-prometheus" # or any other Yabeda adapter
 
 ## Usage
 
-### config.ru
+### Rack application (config.ru)
 
 ```ruby
 require "yabeda/falcon/plugin"
 require "yabeda/falcon/middleware"
 
-# Pass the Falcon server's utilization registry for server-level metrics.
-# If omitted, only per-request metrics (counter + histogram) are collected.
-Yabeda::Falcon::Plugin.install!(registry: server.utilization_registry)
+Yabeda::Falcon::Plugin.install!
 
 use Yabeda::Falcon::Middleware
 run MyApp
+```
+
+### Rails application
+
+```ruby
+# config/initializers/yabeda.rb
+require "yabeda/falcon/plugin"
+
+Yabeda::Falcon::Plugin.install!
+```
+
+```ruby
+# config/application.rb
+config.middleware.use Yabeda::Falcon::Middleware
+```
+
+### Server-level metrics
+
+To collect server-level gauges (connections, active requests), pass the Falcon utilization registry. If omitted, only per-request metrics are collected.
+
+```ruby
+Yabeda::Falcon::Plugin.install!(registry: Async::Utilization::Registry.default)
 ```
 
 ### Custom path normalization
