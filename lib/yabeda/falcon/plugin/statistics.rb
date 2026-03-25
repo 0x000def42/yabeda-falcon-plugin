@@ -25,6 +25,14 @@ module Yabeda
           scheduler_tasks: "Number of top-level async tasks running in this worker"
         }.freeze
 
+        CONTAINER_METRICS = {
+          container_worker_spawns: "Total number of worker processes spawned",
+          container_worker_restarts: "Total number of worker process restarts",
+          container_worker_failures: "Total number of worker process failures",
+          container_worker_restart_rate: "Worker restart rate per second (60s sliding window)",
+          container_worker_failure_rate: "Worker failure rate per second (60s sliding window)"
+        }.freeze
+
         def self.register_metrics!
           Yabeda.configure do
             group :falcon do
@@ -37,6 +45,12 @@ module Yabeda
               Statistics::SCHEDULER_METRICS.each do |metric_name, comment|
                 gauge metric_name,
                   tags: %i[worker],
+                  comment: comment
+              end
+
+              Statistics::CONTAINER_METRICS.each do |metric_name, comment|
+                gauge metric_name,
+                  tags: [],
                   comment: comment
               end
             end
