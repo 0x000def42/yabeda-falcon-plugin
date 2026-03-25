@@ -60,61 +60,6 @@ RSpec.describe Yabeda::Falcon::Plugin do
     end
   end
 
-  describe ".install! container metrics" do
-    let(:restart_rate) { double(per_second: 0.5) }
-    let(:failure_rate) { double(per_second: 0.1) }
-    let(:mock_stats) do
-      instance_double("Async::Container::Statistics",
-        spawns: 3, restarts: 2, failures: 1,
-        restart_rate: restart_rate, failure_rate: failure_rate)
-    end
-
-    context "when container_statistics is provided" do
-      before { described_class.install!(container_statistics: mock_stats) }
-
-      it "registers all 5 container gauges" do
-        expect(Yabeda.falcon_container_worker_spawns).to be_a(Yabeda::Gauge)
-        expect(Yabeda.falcon_container_worker_restarts).to be_a(Yabeda::Gauge)
-        expect(Yabeda.falcon_container_worker_failures).to be_a(Yabeda::Gauge)
-        expect(Yabeda.falcon_container_worker_restart_rate).to be_a(Yabeda::Gauge)
-        expect(Yabeda.falcon_container_worker_failure_rate).to be_a(Yabeda::Gauge)
-      end
-
-      it "collects spawns during Yabeda.collect!" do
-        Yabeda.collect!
-        expect(Yabeda.falcon_container_worker_spawns.values[{}].value).to eq(3)
-      end
-
-      it "collects restarts during Yabeda.collect!" do
-        Yabeda.collect!
-        expect(Yabeda.falcon_container_worker_restarts.values[{}].value).to eq(2)
-      end
-
-      it "collects failures during Yabeda.collect!" do
-        Yabeda.collect!
-        expect(Yabeda.falcon_container_worker_failures.values[{}].value).to eq(1)
-      end
-
-      it "collects restart_rate during Yabeda.collect!" do
-        Yabeda.collect!
-        expect(Yabeda.falcon_container_worker_restart_rate.values[{}].value).to eq(0.5)
-      end
-
-      it "collects failure_rate during Yabeda.collect!" do
-        Yabeda.collect!
-        expect(Yabeda.falcon_container_worker_failure_rate.values[{}].value).to eq(0.1)
-      end
-    end
-
-    context "when container_statistics is nil" do
-      before { described_class.install! }
-
-      it "does not error on collect" do
-        expect { Yabeda.collect! }.not_to raise_error
-      end
-    end
-  end
-
   describe ".install! scheduler metrics" do
     let(:mock_children) { double(size: 5) }
     let(:mock_scheduler) { double(load: 0.42, children: mock_children) }

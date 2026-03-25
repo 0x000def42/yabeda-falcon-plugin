@@ -49,29 +49,6 @@ To collect server-level gauges (connections, active requests), pass the Falcon u
 Yabeda::Falcon::Plugin.install!(registry: Async::Utilization::Registry.default)
 ```
 
-### Worker lifecycle metrics
-
-To collect worker spawn/restart/failure metrics, pass an `Async::Container::Statistics` object. This is only available when you manage the container lifecycle yourself — it lives in the supervisor process, not in workers.
-
-The statistics object comes from any `Async::Container` instance (forked, threaded, or hybrid) via its `.statistics` accessor:
-
-```ruby
-require "async/container"
-require "async/service"
-
-controller = Async::Service::Controller.for(*services)
-controller.start
-
-Yabeda::Falcon::Plugin.install!(
-  registry: Async::Utilization::Registry.default,
-  container_statistics: controller.container.statistics
-)
-
-controller.run
-```
-
-If you use `falcon serve` directly (the CLI), there is currently no built-in hook to access the container statistics — this option is intended for programmatic setups where you control the `Async::Container::Controller` lifecycle.
-
 ### Custom path normalization
 
 By default, numeric path segments are collapsed to `:id` (e.g. `/users/42` -> `/users/:id`). You can override this:
@@ -110,18 +87,6 @@ Collected automatically when running under Falcon (requires `Fiber.scheduler`).
 |--------|------|--------|-------------|
 | `falcon_scheduler_load` | Gauge | `worker` | Async scheduler load (0.0 = idle, 1.0 = fully loaded) |
 | `falcon_scheduler_tasks` | Gauge | `worker` | Number of top-level async tasks (fibers) running |
-
-### Worker lifecycle gauges (from async-container, supervisor-level)
-
-Requires `container_statistics:` argument to `install!`. See [Worker lifecycle metrics](#worker-lifecycle-metrics) above.
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|-------------|
-| `falcon_container_worker_spawns` | Gauge | — | Total worker processes spawned |
-| `falcon_container_worker_restarts` | Gauge | — | Total worker process restarts |
-| `falcon_container_worker_failures` | Gauge | — | Total worker process failures |
-| `falcon_container_worker_restart_rate` | Gauge | — | Worker restart rate per second (60s sliding window) |
-| `falcon_container_worker_failure_rate` | Gauge | — | Worker failure rate per second (60s sliding window) |
 
 ## Multi-process note
 

@@ -6,12 +6,11 @@ module Yabeda
   module Falcon
     module Plugin
       class << self
-        attr_accessor :registry, :fetcher, :parser, :container_statistics
+        attr_accessor :registry, :fetcher, :parser
       end
 
-      def self.install!(registry: nil, container_statistics: nil)
+      def self.install!(registry: nil)
         @registry = registry
-        @container_statistics = container_statistics
         @fetcher = Statistics::Fetcher.new(registry)
         @parser = Statistics::Parser.new(worker_label: Process.pid)
 
@@ -41,13 +40,6 @@ module Yabeda
                 Yabeda.falcon_scheduler_tasks.set(worker_labels, scheduler.children&.size || 0)
               end
 
-              if (cs = Yabeda::Falcon::Plugin.container_statistics)
-                Yabeda.falcon_container_worker_spawns.set({}, cs.spawns)
-                Yabeda.falcon_container_worker_restarts.set({}, cs.restarts)
-                Yabeda.falcon_container_worker_failures.set({}, cs.failures)
-                Yabeda.falcon_container_worker_restart_rate.set({}, cs.restart_rate.per_second)
-                Yabeda.falcon_container_worker_failure_rate.set({}, cs.failure_rate.per_second)
-              end
             end
           end
         end
