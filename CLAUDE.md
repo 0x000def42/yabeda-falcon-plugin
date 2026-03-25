@@ -37,6 +37,13 @@ The gem has two metric collection layers:
 - **rack** (>= 2.0) — middleware interface
 - **async-utilization** (>= 0.1) — Falcon server stats registry
 
+## Git Workflow
+
+Always follow this workflow for every task:
+1. Pull latest from main and create a new branch before starting work
+2. Make changes
+3. Commit and push the branch (with `-u`) when done
+
 ## Testing
 
 RSpec with `rack-test`. The spec helper resets Yabeda state before each test. Tests mock `Async::Utilization::Registry` rather than requiring a running Falcon instance.

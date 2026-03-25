@@ -11,7 +11,7 @@ Collects per-request HTTP metrics via Rack middleware and server-level metrics f
 Add to your Gemfile:
 
 ```ruby
-gem "yabeda-falcon-plugin"
+gem "yabeda-falcon-plugin", git: "https://github.com/xdef42/yabeda-falcon-plugin"
 gem "yabeda-prometheus" # or any other Yabeda adapter
 ```
 
