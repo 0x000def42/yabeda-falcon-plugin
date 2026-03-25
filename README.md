@@ -1,5 +1,3 @@
-# NOTE: AI first, WIP and not tested on production environment
-
 # yabeda-falcon-plugin
 
 A [Yabeda](https://github.com/yabeda-rb/yabeda) metrics plugin for the [Falcon](https://github.com/socketry/falcon) web server.
@@ -11,7 +9,7 @@ Collects per-request HTTP metrics via Rack middleware and server-level metrics f
 Add to your Gemfile:
 
 ```ruby
-gem "yabeda-falcon-plugin"
+gem "yabeda-falcon-plugin", git: "https://github.com/xdef42/yabeda-falcon-plugin"
 gem "yabeda-prometheus" # or any other Yabeda adapter
 ```
 
@@ -86,6 +84,16 @@ Falcon runs multiple worker processes when using `falcon serve -n N`. Each worke
 For aggregation across workers, use a push-based setup:
 - **[prometheus_exporter](https://github.com/discourse/prometheus_exporter)** -- workers push to a sidecar exporter process
 - **[yabeda-statsd](https://github.com/yabeda-rb/yabeda-statsd)** -- each worker pushes to StatsD; aggregation happens at the StatsD/Graphite/DataDog layer
+
+## Testing
+
+```bash
+bundle exec rspec                     # Unit tests only (default)
+INTEGRATION=1 bundle exec rspec       # All tests including integration
+bundle exec rake integration          # Integration tests only
+```
+
+Integration tests boot a real Falcon server (`spec/dummy/config.ru`), send HTTP requests, and verify metrics appear on the Prometheus `/metrics` endpoint.
 
 ## License
 

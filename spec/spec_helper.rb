@@ -17,6 +17,8 @@ RSpec.configure do |config|
   config.order = :random
   Kernel.srand config.seed
 
+  config.filter_run_excluding integration: true unless ENV["INTEGRATION"] == "1"
+
   config.before do
     Yabeda.reset!
   end

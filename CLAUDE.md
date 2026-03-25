@@ -10,13 +10,15 @@ Ruby gem (`yabeda-falcon-plugin`) providing Yabeda metrics integration for the F
 
 ```bash
 bundle install                                    # Install dependencies
-bundle exec rspec                                 # Run all tests
+bundle exec rspec                                 # Run unit tests (integration excluded)
+INTEGRATION=1 bundle exec rspec                   # Run all tests including integration
+bundle exec rake integration                      # Run integration tests only
 bundle exec rspec spec/yabeda/falcon/middleware_spec.rb  # Run a single spec file
 gem build yabeda-falcon-plugin.gemspec             # Build the gem
 bundle exec irb -r ./lib/yabeda/falcon/plugin      # Interactive console
 ```
 
-Default rake task is `spec`, so `bundle exec rake` also runs tests.
+Default rake task is `spec`, so `bundle exec rake` runs unit tests only.
 
 ## Architecture
 
@@ -37,6 +39,15 @@ The gem has two metric collection layers:
 - **rack** (>= 2.0) — middleware interface
 - **async-utilization** (>= 0.1) — Falcon server stats registry
 
+## Git Workflow
+
+Always follow this workflow for every task:
+1. Pull latest from main and create a new branch before starting work
+2. Make changes
+3. Commit and push the branch (with `-u`) when done
+
 ## Testing
 
-RSpec with `rack-test`. The spec helper resets Yabeda state before each test. Tests mock `Async::Utilization::Registry` rather than requiring a running Falcon instance.
+**Unit tests** — RSpec with `rack-test`. The spec helper resets Yabeda state before each test. Tests mock `Async::Utilization::Registry` rather than requiring a running Falcon instance. Tagged specs with `:integration` are excluded by default.
+
+**Integration tests** — Located in `spec/integration/`. A dummy Rack app (`spec/dummy/config.ru`) wires up the full plugin + yabeda-prometheus stack. Tests spawn a real Falcon server process, send HTTP requests, and verify Prometheus metrics on `/metrics`. Run with `INTEGRATION=1 bundle exec rspec` or `bundle exec rake integration`.
