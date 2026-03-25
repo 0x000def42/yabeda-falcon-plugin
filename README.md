@@ -61,7 +61,16 @@ use Yabeda::Falcon::Middleware, path_labeler: ->(env) {
 
 ## Metrics
 
-### Server-level gauges (from Falcon's utilization registry)
+### Per-request metrics (from Rack middleware)
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `falcon_http_requests_total` | Counter | `method`, `path`, `status` | Total HTTP requests handled |
+| `falcon_http_request_duration` | Histogram | `method`, `path`, `status` | Request duration in seconds |
+
+### Server-level gauges (from Falcon's utilization registry, per worker)
+
+Requires `registry:` argument to `install!`.
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
@@ -70,12 +79,14 @@ use Yabeda::Falcon::Middleware, path_labeler: ->(env) {
 | `falcon_requests_total_count` | Gauge | `worker` | Total requests handled by the server |
 | `falcon_requests_active` | Gauge | `worker` | Currently in-flight requests |
 
-### Per-request metrics (from Rack middleware)
+### Scheduler gauges (per worker)
+
+Collected automatically when running under Falcon (requires `Fiber.scheduler`).
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
-| `falcon_http_requests_total` | Counter | `method`, `path`, `status` | Total HTTP requests handled |
-| `falcon_http_request_duration` | Histogram | `method`, `path`, `status` | Request duration in seconds |
+| `falcon_scheduler_load` | Gauge | `worker` | Async scheduler load (0.0 = idle, 1.0 = fully loaded) |
+| `falcon_scheduler_tasks` | Gauge | `worker` | Number of top-level async tasks (fibers) running |
 
 ## Multi-process note
 

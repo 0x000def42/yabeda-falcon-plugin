@@ -26,12 +26,12 @@ The gem has two metric collection layers:
 
 **Per-request metrics** — `Yabeda::Falcon::Middleware` is Rack middleware that wraps each request, measuring duration and recording counter/histogram metrics. It normalizes URL paths (numeric segments → `:id`) and supports custom path labelers via constructor argument.
 
-**Server-level metrics** — `Yabeda::Falcon::Plugin::Statistics` registers gauge metrics from Falcon's utilization registry, using a Fetcher/Parser pipeline:
-- `Statistics::Fetcher` — retrieves raw stats from `Async::Utilization::Registry`
-- `Statistics::Parser` — maps registry keys to metric names, attaches worker (PID) labels
-- `Statistics` — registers gauges with Yabeda and sets values during collection
+**Server-level metrics** — `Yabeda::Falcon::Plugin::Statistics` registers gauges across three sources, all collected via a single `collect` block in the plugin:
+- `Statistics::Fetcher` / `Statistics::Parser` — read `Async::Utilization::Registry` keys (`connections_total/active`, `requests_total/active`) and attach a `worker` (PID) label
+- Scheduler gauges (`scheduler_load`, `scheduler_tasks`) — read directly from `Fiber.scheduler` in the collect block; no-op when scheduler is nil
+- Container gauges (`container_worker_spawns/restarts/failures/restart_rate/failure_rate`) — read from an `Async::Container::Statistics` object when provided; supervisor-level aggregates with no label
 
-**Entry point** — `Yabeda::Falcon::Plugin.install!(registry: nil)` wires everything together: registers all metrics via `Yabeda.configure` blocks and sets up the collect callback.
+**Entry point** — `Yabeda::Falcon::Plugin.install!(registry: nil, container_statistics: nil)` wires everything together. `registry` is the `Async::Utilization::Registry` from the Falcon server; `container_statistics` is optional and only needed when running under `async-container` to expose worker lifecycle metrics (supervisor-side).
 
 ## Key Dependencies
 
