@@ -1,3 +1,5 @@
+# NOTE: AI first, WIP and not tested on production environment
+
 # yabeda-falcon-plugin
 
 A [Yabeda](https://github.com/yabeda-rb/yabeda) metrics plugin for the [Falcon](https://github.com/socketry/falcon) web server.
