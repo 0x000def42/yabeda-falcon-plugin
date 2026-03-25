@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rack-test", "~> 2.0"
   spec.add_development_dependency "async", "~> 2.0"
   spec.add_development_dependency "falcon", "~> 0.47"
+  spec.add_development_dependency "yabeda-prometheus", "~> 0.9"
 end
